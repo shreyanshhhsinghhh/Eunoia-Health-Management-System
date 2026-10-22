@@ -1,0 +1,35 @@
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Database files and private data
+*.sqlite3
+*.db
+*.sql.bak
+
+# Generated bills
+bills_pdf/
+bill_*.pdf
+Bill_*.pdf
+
+# Backups and temporary files
+test_backup.py
+main_backup.py
+.DS_Store
+Thumbs.db
+.vscode/
+# Local configuration and logs
+config.ini
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
