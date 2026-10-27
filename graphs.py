@@ -1,15 +1,18 @@
 import matplotlib.pyplot as plt
 from db import connect_db
 
+
 def show_revenue_graph():
     conn = connect_db()
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT bill_date, SUM(total)
+        SELECT DATE(bill_date), SUM(total)
         FROM bills
-        GROUP BY bill_date
-        ORDER BY bill_date
+        WHERE bill_date >= CURDATE() - INTERVAL 4 DAY
+          AND bill_date < CURDATE() + INTERVAL 1 DAY
+        GROUP BY DATE(bill_date)
+        ORDER BY DATE(bill_date) ASC
     """)
 
     data = cursor.fetchall()
@@ -17,11 +20,11 @@ def show_revenue_graph():
     conn.close()
 
     dates = [str(row[0]) for row in data]
-    revenue = [float(row[1]) for row in data]
+    revenue = [float(row[1] or 0) for row in data]
 
     plt.figure()
     plt.plot(dates, revenue, marker='o')
-    plt.title("Revenue Per Day")
+    plt.title("Revenue Per Day (Last 5 Days)")
     plt.xlabel("Date")
     plt.ylabel("Revenue")
     plt.xticks(rotation=45)
@@ -34,10 +37,12 @@ def show_patient_graph():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT visit_date, COUNT(*)
+        SELECT DATE(visit_date), COUNT(*)
         FROM patients
-        GROUP BY visit_date
-        ORDER BY visit_date
+        WHERE visit_date >= CURDATE() - INTERVAL 4 DAY
+          AND visit_date < CURDATE() + INTERVAL 1 DAY
+        GROUP BY DATE(visit_date)
+        ORDER BY DATE(visit_date) ASC
     """)
 
     data = cursor.fetchall()
@@ -49,7 +54,7 @@ def show_patient_graph():
 
     plt.figure()
     plt.bar(dates, counts)
-    plt.title("Patients Per Day")
+    plt.title("Patients Per Day (Last 5 Days)")
     plt.xlabel("Date")
     plt.ylabel("Number of Patients")
     plt.xticks(rotation=45)
@@ -71,40 +76,46 @@ def show_payment_pie():
     cursor.close()
     conn.close()
 
-    labels = [row[0] for row in data]
-    values = [row[1] for row in data]
+    labels = [row[0] or "Unknown" for row in data]
+    values = [float(row[1] or 0) for row in data]
 
     plt.figure(figsize=(6, 6))
-values = [float(v or 0) for v in values]
 
-print("Payment chart values:", values)
-print("Payment chart total:", sum(values))
+    print("Payment chart values:", values)
+    print("Payment chart total:", sum(values))
 
-if not values or sum(values) <= 0:
-    plt.text(
-        0.5, 0.5,
-        "No payment data yet",
-        ha="center",
-        va="center",
-        transform=plt.gca().transAxes
-    )
-    plt.title("Payment Status")
-    plt.axis("off")
+    if not values or sum(values) <= 0:
+        plt.text(
+            0.5, 0.5,
+            "No payment data yet",
+            ha="center",
+            va="center",
+            transform=plt.gca().transAxes
+        )
+        plt.title("Payment Status")
+        plt.axis("off")
 
-else:
-    plt.pie(
-        values,
-        autopct='%1.1f%%',
-        pctdistance=0.78,
-        startangle=90,
-        wedgeprops=dict(width=0.4),
-        explode=[0.02] * len(values)
-    )
-    plt.title("Payment Status")
-    plt.axis("equal")
-    plt.title("Payment Status", y=1.08)
-    plt.legend(labels, loc="upper center", bbox_to_anchor=(0.5, 1.02), ncol=3)
+    else:
+        plt.pie(
+            values,
+            labels=None,
+            autopct='%1.1f%%',
+            pctdistance=0.78,
+            startangle=90,
+            wedgeprops=dict(width=0.4),
+            explode=[0.02] * len(values)
+        )
+        plt.title("Payment Status", y=1.08)
+        plt.axis("equal")
+        plt.legend(
+            labels,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.02),
+            ncol=3
+        )
+
     plt.tight_layout()
+    plt.show()
 
 
 def show_gender_graph():
@@ -112,16 +123,16 @@ def show_gender_graph():
     cursor = conn.cursor()
 
     cursor.execute("""
-          SELECT gender, COUNT(*)
-          FROM patients
-          GROUP BY gender
+        SELECT gender, COUNT(*)
+        FROM patients
+        GROUP BY gender
     """)
 
     data = cursor.fetchall()
     cursor.close()
     conn.close()
 
-    genders = [row[0] for row in data]
+    genders = [row[0] or "Unknown" for row in data]
     counts = [row[1] for row in data]
 
     plt.figure(figsize=(6, 5))
